@@ -137,3 +137,6 @@ dmypy.json
 # PyCharm
 .idea
 *.iml
+activate
+Activate.ps1
+.history
