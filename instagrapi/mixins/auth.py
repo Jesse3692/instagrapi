@@ -357,7 +357,6 @@ class LoginMixin(PreLoginFlowMixin, PostLoginFlowMixin):
         """
         self.username = username
         self.password = password
-        self.init()
         if relogin:
             self.private.cookies.clear()
             if self.relogin_attempt > 1:
@@ -630,7 +629,7 @@ class LoginMixin(PreLoginFlowMixin, PostLoginFlowMixin):
         data = dict(self.device_settings, locale=self.locale)
         self.user_agent = user_agent or config.USER_AGENT_BASE.format(**data)
         # self.private.headers.update({"User-Agent": self.user_agent})  # changed in base_headers
-        # self.settings["user_agent"] = self.user_agent
+        self.settings["user_agent"] = self.user_agent
         if reset:
             self.set_uuids({})
             # self.settings = self.get_settings()

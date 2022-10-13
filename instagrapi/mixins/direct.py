@@ -6,6 +6,7 @@ from typing import List, Optional
 
 from instagrapi.exceptions import ClientNotFoundError, DirectThreadNotFound
 from instagrapi.extractors import (
+    extract_direct_media,
     extract_direct_message,
     extract_direct_response,
     extract_direct_short_thread,
@@ -16,6 +17,7 @@ from instagrapi.types import (
     DirectResponse,
     DirectShortThread,
     DirectThread,
+    Media,
 )
 from instagrapi.utils import dumps
 
@@ -666,3 +668,89 @@ class DirectMixin:
             A boolean value
         """
         return self.direct_thread_mute_video_call(thread_id, revert=True)
+
+    def direct_profile_share(self, user_id: str, user_ids: List[int] = [], thread_ids: List[int] = []) -> DirectMessage:
+        """
+        Share a profile to list of users
+
+        Parameters
+        ----------
+        user_id: str
+            Unique User ID (profile)
+        user_ids: List[int]
+            List of unique identifier of Users id (recipients)
+        thread_ids: List[int]
+            List of unique identifier of Users id
+
+        Returns
+        -------
+        DirectMessage
+            An object of DirectMessage
+        """
+        assert self.user_id, "Login required"
+        assert (user_ids or thread_ids) and not (user_ids and thread_ids), "Specify user_ids or thread_ids, but not both"
+        token = self.generate_mutation_token()
+        data = {
+            "action": "send_item",
+            "is_shh_mode": "0",
+            "send_attribution": "profile",
+            "client_context": token,
+            "mutation_token": token,
+            "nav_chain": "1qT:feed_timeline:1,ReelViewerFragment:reel_feed_timeline:4,DirectShareSheetFragment:direct_reshare_sheet:5",
+            "profile_user_id": user_id,
+            "offline_threading_id": token,
+        }
+        if user_ids:
+            data["recipient_users"] = dumps([[int(uid) for uid in user_ids]])
+        if thread_ids:
+            data["thread_ids"] = dumps([int(tid) for tid in thread_ids])
+        result = self.private_request(
+            "direct_v2/threads/broadcast/profile/",
+            data=self.with_default_data(data),
+            with_signature=False,
+        )
+        return extract_direct_message(result["payload"])
+
+    def direct_media(self, thread_id: int, amount: int = 20) -> List[Media]:
+        """
+        Get all the media from a thread
+
+        Parameters
+        ----------
+        thread_id: int
+            Unique identifier of a Direct Message thread
+
+        amount: int, optional
+            Maximum number of media to return, default is 20
+
+        Returns
+        -------
+        List[Media]
+            A list of objects of Media
+        """
+        assert self.user_id, "Login required"
+        params = {
+            "limit": 20,
+            "media_type": "photos_and_videos"
+        }
+        max_timestamp = None
+        items = []
+        while True:
+            if max_timestamp:
+                params["max_timestamp"] = max_timestamp
+            try:
+                result = self.private_request(
+                    f"direct_v2/threads/{thread_id}/media/", params=params
+                )
+            except ClientNotFoundError as e:
+                raise DirectThreadNotFound(e, thread_id=thread_id, **self.last_json)
+            for item in result["items"]:
+                media = item.get("media")
+                items.append(extract_direct_media(media))
+                max_timestamp = item.get("timestamp")
+            more_available = result.get("more_available")
+            if not more_available or (amount and len(items) >= amount):
+                break
+        if amount:
+            items = items[:amount]
+        return items

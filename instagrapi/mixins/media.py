@@ -51,7 +51,7 @@ class MediaMixin:
         media_id = str(media_pk)
         if "_" not in media_id:
             assert media_id.isdigit(), (
-                "media_id must been contain digits, now %s" % media_id
+                    "media_id must been contain digits, now %s" % media_id
             )
             user = self.media_user(media_id)
             media_id = "%s_%s" % (media_id, user.pk)
@@ -294,12 +294,12 @@ class MediaMixin:
         return result.get("did_delete")
 
     def media_edit(
-        self,
-        media_id: str,
-        caption: str,
-        title: str = "",
-        usertags: List[Usertag] = [],
-        location: Location = None,
+            self,
+            media_id: str,
+            caption: str,
+            title: str = "",
+            usertags: List[Usertag] = [],
+            location: Location = None,
     ) -> Dict:
         """
         Edit caption for media
@@ -460,7 +460,8 @@ class MediaMixin:
         medias = []
         variables = {
             "id": user_id,
-            "first": 50 if not amount or amount > 50 else amount,  # These are Instagram restrictions, you can only specify <= 50
+            "first": 50 if not amount or amount > 50 else amount,
+            # These are Instagram restrictions, you can only specify <= 50
         }
         variables["after"] = end_cursor
         data = self.public_graphql_request(
@@ -483,7 +484,7 @@ class MediaMixin:
         )
 
     def user_medias_gql(
-        self, user_id: int, amount: int = 0, sleep: int = 2
+            self, user_id: int, amount: int = 0, sleep: int = 0
     ) -> List[Media]:
         """
         Get a user's media by Public Graphql API
@@ -494,7 +495,7 @@ class MediaMixin:
         amount: int, optional
             Maximum number of media to return, default is 0 (all medias)
         sleep: int, optional
-            Timeout between pages iterations, default is 2
+            Timeout between pages iterations, default is a random number between 1 and 3.
 
         Returns
         -------
@@ -503,16 +504,22 @@ class MediaMixin:
         """
         amount = int(amount)
         user_id = int(user_id)
+        sleep = int(sleep)
         medias = []
         end_cursor = None
         variables = {
             "id": user_id,
-            "first": 50 if not amount or amount > 50 else amount,  # These are Instagram restrictions, you can only specify <= 50
+            "first": 50 if not amount or amount > 50 else amount,
+            # These are Instagram restrictions, you can only specify <= 50
         }
         while True:
             self.logger.info(f"user_medias_gql: {amount}, {end_cursor}")
             if end_cursor:
                 variables["after"] = end_cursor
+
+            if not sleep:
+                sleep = random.randint(1, 3)
+
             medias_page, end_cursor = self.user_medias_paginated_gql(
                 user_id, amount, sleep, end_cursor=end_cursor
             )
@@ -649,7 +656,7 @@ class MediaMixin:
             medias, end_cursor = self.user_medias_paginated_v1(user_id, amount, end_cursor=end_cursor)
         return medias, end_cursor
 
-    def user_medias(self, user_id: int, amount: int = 0) -> List[Media]:
+    def user_medias(self, user_id: int, amount: int = 0, sleep: int = 0) -> List[Media]:
         """
         Get a user's media
 
@@ -658,6 +665,8 @@ class MediaMixin:
         user_id: int
         amount: int, optional
             Maximum number of media to return, default is 0 (all medias)
+        sleep: int, optional
+            Timeout between page iterations
 
         Returns
         -------
@@ -666,13 +675,14 @@ class MediaMixin:
         """
         amount = int(amount)
         user_id = int(user_id)
+        sleep = int(sleep)
         try:
             try:
-                medias = self.user_medias_gql(user_id, amount)
+                medias = self.user_medias_gql(user_id, amount, sleep)
             except ClientLoginRequired as e:
                 if not self.inject_sessionid_to_public():
                     raise e
-                medias = self.user_medias_gql(user_id, amount)  # retry
+                medias = self.user_medias_gql(user_id, amount, sleep)  # retry
         except Exception as e:
             if not isinstance(e, ClientError):
                 self.logger.exception(e)
@@ -720,21 +730,20 @@ class MediaMixin:
         )
         return result["status"] == "ok"
 
-    def media_likers(self, media_id: str) -> List[UserShort]:
+    def media_likers(self, media_pk: str) -> List[UserShort]:
         """
         Get user's likers
 
         Parameters
         ----------
-        media_id: str
+        media_pk: str
 
         Returns
         -------
         List[UserShort]
             List of objects of User type
         """
-        media_id = self.media_id(media_id)
-        result = self.private_request(f"media/{media_id}/likers/")
+        result = self.private_request(f"media/{media_pk}/likers/")
         return [extract_user_short(u) for u in result['users']]
 
     def media_archive(self, media_id: str, revert: bool = False) -> bool:
@@ -778,7 +787,7 @@ class MediaMixin:
         return self.media_archive(media_id, revert=True)
 
     def usertag_medias_gql(
-        self, user_id: int, amount: int = 0, sleep: int = 2
+            self, user_id: int, amount: int = 0, sleep: int = 2
     ) -> List[Media]:
         """
         Get medias where a user is tagged (by Public GraphQL API)
@@ -802,7 +811,8 @@ class MediaMixin:
         end_cursor = None
         variables = {
             "id": user_id,
-            "first": 50 if not amount or amount > 50 else amount,  # These are Instagram restrictions, you can only specify <= 50
+            "first": 50 if not amount or amount > 50 else amount,
+            # These are Instagram restrictions, you can only specify <= 50
         }
         while True:
             if end_cursor:
@@ -885,3 +895,40 @@ class MediaMixin:
         except ClientError:
             medias = self.usertag_medias_v1(user_id, amount)
         return medias
+
+    def media_pin(self, media_pk: str, revert: bool = False):
+        """
+        Pin post to user profile
+
+        Parameters
+        ----------
+        media_pk: str
+        revert: bool, optional
+            Unpin when True
+
+        Returns
+        -------
+        bool
+        A boolean value
+        """
+        data = self.with_action_data({"post_id": media_pk,
+                                      "_uuid": self.uuid})
+        name = "unpin" if revert else "pin"
+
+        result = self.private_request(f"users/{name}_timeline_media/", data)
+        return result["status"] == "ok"
+
+    def media_unpin(self, media_pk):
+        """
+        Pin post to user profile
+
+        Parameters
+        ----------
+        media_pk: str
+
+        Returns
+        -------
+        bool
+        A boolean value
+        """
+        return self.media_pin(media_pk, True)
