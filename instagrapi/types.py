@@ -5,9 +5,9 @@ from pydantic import BaseModel, FilePath, HttpUrl, ValidationError, validator
 
 
 def validate_external_url(cls, v):
-    if v is None or (v.startswith('http') and '://' in v) or isinstance(v, str):
+    if v is None or (v.startswith("http") and "://" in v) or isinstance(v, str):
         return v
-    raise ValidationError('external_url must been URL or string')
+    raise ValidationError("external_url must been URL or string")
 
 
 class Resource(BaseModel):
@@ -51,7 +51,7 @@ class User(BaseModel):
     instagram_location_id: Optional[str]
     interop_messaging_user_fbid: Optional[str]
 
-    _external_url = validator('external_url', allow_reuse=True)(validate_external_url)
+    _external_url = validator("external_url", allow_reuse=True)(validate_external_url)
 
 
 class Account(BaseModel):
@@ -69,7 +69,7 @@ class Account(BaseModel):
     gender: Optional[int]
     email: Optional[str]
 
-    _external_url = validator('external_url', allow_reuse=True)(validate_external_url)
+    _external_url = validator("external_url", allow_reuse=True)(validate_external_url)
 
 
 class UserShort(BaseModel):
@@ -121,6 +121,7 @@ class Media(BaseModel):
     comment_count: Optional[int] = 0
     comments_disabled: Optional[bool] = False
     like_count: int
+    play_count: Optional[int]
     has_liked: Optional[bool]
     caption_text: str
     accessibility_caption: Optional[str]
@@ -230,7 +231,7 @@ class StoryStickerLink(BaseModel):
 
 class StorySticker(BaseModel):
     id: Optional[str]
-    type: Optional[str] = 'gif'
+    type: Optional[str] = "gif"
     x: float
     y: float
     z: Optional[int] = 1000005
@@ -446,3 +447,22 @@ class Track(BaseModel):
     dark_message: Optional[str]
     allows_saving: bool
     territory_validity_periods: dict
+
+
+class NoteResponse(BaseModel):
+    id: str
+    text: str
+    user_id: int
+    user: UserShort
+    audience: int
+    created_at: datetime
+    expires_at: datetime
+    is_emoji_only: bool
+    has_translation: bool
+    note_style: int
+    status: str
+
+
+class NoteRequest(BaseModel):
+    text: str
+    uuid: str
