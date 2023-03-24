@@ -580,6 +580,24 @@ class LoginMixin(PreLoginFlowMixin, PostLoginFlowMixin):
             return self.settings
         return None
 
+    def load_settings_content(self, content: str) -> Dict:
+        """
+        load session settings
+
+        Parameters
+        ----------
+        content: str
+            stored content
+
+        Returns
+        -------
+        Dict
+            Current session settings as a Dict
+        """
+
+        self.set_settings(json.loads(content))
+        return self.settings
+
     def dump_settings(self, path: Path) -> bool:
         """
         Serialize and save session settings
@@ -596,6 +614,22 @@ class LoginMixin(PreLoginFlowMixin, PostLoginFlowMixin):
         with open(path, "w") as fp:
             json.dump(self.get_settings(), fp)
         return True
+
+    def dump_settings_content(self) -> str:
+        """
+        Serialize and save session settings
+
+        Parameters
+        ----------
+        path: Path
+            Path to storage file
+
+        Returns
+        -------
+        str
+        """
+
+        return json.dumps(self.get_settings())
 
     def set_device(self, device: Dict = None, reset: bool = False) -> bool:
         """
