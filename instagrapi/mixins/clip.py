@@ -9,9 +9,8 @@ from uuid import uuid4
 from instagrapi import config
 from instagrapi.exceptions import ClientError, ClipConfigureError, ClipNotUpload
 from instagrapi.extractors import extract_media_v1
-from instagrapi.types import Location, Media, Usertag, Track
+from instagrapi.types import Location, Media, Track, Usertag
 from instagrapi.utils import date_time_original
-
 
 try:
     from PIL import Image
@@ -254,8 +253,14 @@ class UploadClipMixin:
         tmpvideo = Path(tempfile.mktemp(".mp4"))
         video.write_videofile(str(tmpvideo))
         # close the media
-        video.close()
-        audio_clip.close()
+        try:
+            video.close()
+        except AttributeError:
+            pass
+        try:
+            audio_clip.close()
+        except AttributeError:
+            pass
         # create the extra data to upload with it
         data = extra_data or {}
         data["clips_audio_metadata"] = (

@@ -8,6 +8,8 @@ except ImportError:
     from json.decoder import JSONDecodeError
 
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 from instagrapi.exceptions import (
     ClientBadRequestError,
@@ -35,7 +37,27 @@ class PublicRequestMixin:
     request_timeout = 1
 
     def __init__(self, *args, **kwargs):
-        self.public = requests.Session()
+        # setup request session with retries
+        session = requests.Session()
+        try:
+            retry_strategy = Retry(
+                total=3,
+                status_forcelist=[429, 500, 502, 503, 504],
+                allowed_methods=["GET", "POST"],
+                backoff_factor=2,
+            )
+        except TypeError:
+            retry_strategy = Retry(
+                total=3,
+                status_forcelist=[429, 500, 502, 503, 504],
+                method_whitelist=["GET", "POST"],
+                backoff_factor=2,
+            )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        self.public = session
+
         self.public.verify = False  # fix SSLError/HTTPSConnectionPool
         self.public.headers.update(
             {
@@ -43,7 +65,10 @@ class PublicRequestMixin:
                 "Accept": "*/*",
                 "Accept-Encoding": "gzip,deflate",
                 "Accept-Language": "en-US",
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1.2 Safari/605.1.15",
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 "
+                    "(KHTML, like Gecko) Version/11.1.2 Safari/605.1.15"
+                ),
             }
         )
         self.request_timeout = kwargs.pop("request_timeout", self.request_timeout)
@@ -107,9 +132,13 @@ class PublicRequestMixin:
             time.sleep(self.request_timeout)
         try:
             if data is not None:  # POST
-                response = self.public.data(url, data=data, params=params)
+                response = self.public.data(
+                    url, data=data, params=params, proxies=self.public.proxies
+                )
             else:  # GET
-                response = self.public.get(url, params=params)
+                response = self.public.get(
+                    url, params=params, proxies=self.public.proxies
+                )
 
             expected_length = int(response.headers.get("Content-Length") or 0)
             actual_length = response.raw.tell()

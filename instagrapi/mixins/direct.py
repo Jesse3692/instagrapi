@@ -242,12 +242,16 @@ class DirectMixin:
         ), "Specify user_ids or thread_ids, but not both"
         method = "text"
         token = self.generate_mutation_token()
+
         kwargs = {
             "action": "send_item",
+            "is_x_transport_forward": "false",
+            "send_silently": "false",
             "is_shh_mode": "0",
-            "send_attribution": "direct_thread",
+            "send_attribution": "message_button",
             "client_context": token,
             "mutation_token": token,
+            "_uuid": self.uuid,
             "nav_chain": "1qT:feed_timeline:1,1qT:feed_timeline:2,1qT:feed_timeline:3,7Az:direct_inbox:4,7Az:direct_inbox:5,5rG:direct_thread:7",
             "offline_threading_id": token,
         }
@@ -606,9 +610,6 @@ class DirectMixin:
         data = self.with_default_data({})
         data.pop("_uid", None)
         data.pop("device_id", None)
-        data["is_shh_mode"] = 0
-        data["send_attribution"] = "direct_thread"
-        data["original_message_client_context"] = self.generate_mutation_token()
         result = self.private_request(
             f"direct_v2/threads/{thread_id}/items/{message_id}/delete/", data=data
         )

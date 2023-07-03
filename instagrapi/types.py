@@ -114,12 +114,14 @@ class Media(BaseModel):
     code: str
     taken_at: datetime
     media_type: int
+    image_versions2: Optional[dict] = {}
     product_type: Optional[str] = ""  # igtv or feed
     thumbnail_url: Optional[HttpUrl]
     location: Optional[Location] = None
     user: UserShort
     comment_count: Optional[int] = 0
     comments_disabled: Optional[bool] = False
+    commenting_disabled_for_viewer: Optional[bool] = False
     like_count: int
     play_count: Optional[int]
     has_liked: Optional[bool]
@@ -133,6 +135,19 @@ class Media(BaseModel):
     title: Optional[str] = ""
     resources: List[Resource] = []
     clips_metadata: dict = {}
+
+
+class MediaXma(BaseModel):
+    #media_type: int
+    video_url: HttpUrl  # for Video and IGTV
+    title: Optional[str] = ""
+    preview_url: Optional[HttpUrl]
+    preview_url_mime_type: Optional[str]
+    header_icon_url: Optional[HttpUrl]
+    header_icon_width: Optional[int]
+    header_icon_height: Optional[int]
+    header_title_text: Optional[str]
+    preview_media_fbid: Optional[str]
 
 
 class MediaOembed(BaseModel):
@@ -285,6 +300,7 @@ class DirectMedia(BaseModel):
     user: Optional[UserShort]
     thumbnail_url: Optional[HttpUrl]
     video_url: Optional[HttpUrl]
+    audio_url: Optional[HttpUrl]
 
 
 class ReplyMessage(BaseModel):
@@ -303,6 +319,7 @@ class ReplyMessage(BaseModel):
     reel_share: Optional[dict]
     story_share: Optional[dict]
     felix_share: Optional[dict]
+    xma_share: Optional[MediaXma]
     clip: Optional[Media]
     placeholder: Optional[dict]
 
@@ -326,6 +343,7 @@ class DirectMessage(BaseModel):
     reel_share: Optional[dict]
     story_share: Optional[dict]
     felix_share: Optional[dict]
+    xma_share: Optional[MediaXma]
     clip: Optional[Media]
     placeholder: Optional[dict]
 

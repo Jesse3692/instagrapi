@@ -13,6 +13,7 @@ from instagrapi.mixins.clip import DownloadClipMixin, UploadClipMixin
 from instagrapi.mixins.collection import CollectionMixin
 from instagrapi.mixins.comment import CommentMixin
 from instagrapi.mixins.direct import DirectMixin
+from instagrapi.mixins.explore import ExploreMixin
 from instagrapi.mixins.fbsearch import FbSearchMixin
 from instagrapi.mixins.fundraiser import FundraiserMixin
 from instagrapi.mixins.hashtag import HashtagMixin
@@ -80,6 +81,7 @@ class Client(
     DownloadClipMixin,
     UploadClipMixin,
     ReelsMixin,
+    ExploreMixin,
     BloksMixin,
     TOTPMixin,
     MultipleAccountsMixin,

@@ -300,7 +300,7 @@ class StoryMixin:
         )
         filename = "%s.%s" % (filename, fname.rsplit(".", 1)[1]) if filename else fname
         path = Path(folder) / filename
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, timeout=self.request_timeout)
         response.raise_for_status()
         with open(path, "wb") as f:
             response.raw.decode_content = True
@@ -396,3 +396,25 @@ class StoryMixin:
             A boolean value
         """
         return self.story_like(story_id, revert=True)
+    
+    def sticker_tray(self) -> dict:
+        '''
+        Getting a sticker tray from Instagram
+
+        Returns
+        -------
+        dict
+            Sticker Tray
+        '''
+        data = {
+            "_uid" : self.user_id,
+            "type" : "static_stickers",
+            "_uuid" : self.uuid
+        }
+        result = self.private_request(
+            "creatives/sticker_tray/", 
+            data=data,
+            with_signature=True,
+        )
+        assert result["status"] == "ok"
+        return result

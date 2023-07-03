@@ -8,7 +8,6 @@ from instagrapi.extractors import (
     extract_media_v1,
 )
 from instagrapi.types import Hashtag, Media
-from instagrapi.utils import dumps
 
 
 class HashtagMixin:
@@ -249,15 +248,17 @@ class HashtagMixin:
         assert tab_key in (
             "top",
             "recent",
+            "clips",
         ), 'You must specify one of the options for "tab_key" ("top" or "recent")'
+
         data = {
-            "supported_tabs": dumps([tab_key]),
-            # 'lat': 59.8626416,
-            # 'lng': 30.5126682,
-            "include_persistent": "true",
+            "media_recency_filter": "default",
+            "tab": tab_key,
+            "_uuid": self.uuid,
+            "include_persistent": "false",
             "rank_token": self.rank_token,
-            "count": 10000,
         }
+
         medias = []
         while True:
             result = self.private_request(
@@ -423,3 +424,57 @@ class HashtagMixin:
         except ClientError:
             medias = self.hashtag_medias_recent_v1(name, amount)
         return medias
+
+    def hashtag_medias_reels_v1(self, name: str, amount: int = 27) -> List[Media]:
+        """
+        Get reels medias for a hashtag by Private Mobile API
+
+        Parameters
+        ----------
+        name: str
+            Name of the hashtag
+        amount: int, optional
+            Maximum number of media to return, default is 71
+
+        Returns
+        -------
+        List[Media]
+            List of objects of Media
+        """
+        return self.hashtag_medias_v1(name, amount, tab_key="clips")
+
+    def hashtag_follow(self, hashtag: str, unfollow: bool = False) -> bool:
+        """
+        Follow to hashtag
+        Parameters
+        ----------
+        hashtag: str
+            Unique identifier of a Hashtag
+        unfollow: bool, optional
+            Unfollow when True
+        Returns
+        -------
+        bool
+            A boolean value
+        """
+        assert self.user_id, "Login required"
+        name = "unfollow" if unfollow else "follow"
+        data = self.with_action_data({"user_id": self.user_id})
+        result = self.private_request(
+            f"web/tags/{name}/{hashtag}/", domain="www.instagram.com", data=data
+        )
+        return result["status"] == "ok"
+
+    def hashtag_unfollow(self, hashtag: str) -> bool:
+        """
+        Unfollow to hashtag
+        Parameters
+        ----------
+        hashtag: str
+            Unique identifier of a Hashtag
+        Returns
+        -------
+        bool
+            A boolean value
+        """
+        return self.hashtag_follow(hashtag, unfollow=True)

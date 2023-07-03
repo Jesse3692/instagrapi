@@ -44,7 +44,7 @@ class PreLoginFlowMixin:
         """
         # self.set_contact_point_prefill("prefill")
         # self.get_prefill_candidates(True)
-        self.set_contact_point_prefill("prefill")
+        # self.set_contact_point_prefill("prefill")
         self.sync_launcher(True)
         # self.sync_device_features(True)
         return True
@@ -297,7 +297,7 @@ class LoginMixin(PreLoginFlowMixin, PostLoginFlowMixin):
         # c7aeefd59aab78fc0a703ea060ffb631e005e2b3948efb9d73ee6a346c446bf3
         self.bloks_versioning_id = "ce555e5500576acd8e84a66018f54a05720f2dce29f0bb5a1f97f0c10d6fac48"  # this param is constant and will change by Instagram app version
         self.set_user_agent(self.settings.get("user_agent"))
-        self.set_uuids(self.settings.get("uuids", {}))
+        self.set_uuids(self.settings.get("uuids") or {})
         self.set_locale(self.settings.get("locale", self.locale))
         self.set_country(self.settings.get("country", self.country))
         self.set_country_code(self.settings.get("country_code", self.country_code))
@@ -612,7 +612,7 @@ class LoginMixin(PreLoginFlowMixin, PostLoginFlowMixin):
         Bool
         """
         with open(path, "w") as fp:
-            json.dump(self.get_settings(), fp)
+            json.dump(self.get_settings(), fp, indent=4)
         return True
 
     def dump_settings_content(self) -> str:
@@ -861,6 +861,8 @@ class LoginMixin(PreLoginFlowMixin, PostLoginFlowMixin):
         """Parse authorization header"""
         try:
             b64part = authorization.rsplit(":", 1)[-1]
+            if not b64part:
+                return {}
             return json.loads(base64.b64decode(b64part))
         except Exception as e:
             self.logger.exception(e)
