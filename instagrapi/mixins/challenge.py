@@ -3,6 +3,7 @@ import json
 import time
 from enum import Enum
 from typing import Dict
+import random
 
 import requests
 
@@ -367,7 +368,20 @@ class ChallengeResolveMixin:
             # IT WAS ME (by GEO)
             self._send_private_request(challenge_url, {"choice": "0"})
             return True
-        elif step_name in ("verify_email", "select_verify_method"):
+        elif step_name == "add_birthday":
+            random_year = random.randint(1970, 2004)
+            random_month = random.randint(1, 12)
+            random_day = random.randint(1, 28)
+            self._send_private_request(
+                challenge_url,
+                {
+                    "birthday_year": str(random_year),
+                    "birthday_month": str(random_month),
+                    "birthday_day": str(random_day),
+                },
+            )
+            return True
+        elif step_name in ("verify_email", "verify_email_code", "select_verify_method"):
             if step_name == "select_verify_method":
                 """
                 {'step_name': 'select_verify_method',
